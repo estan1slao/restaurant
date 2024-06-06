@@ -1,18 +1,8 @@
-from django.contrib.auth.handlers.modwsgi import check_password
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.password_validation import validate_password
-from rest_framework import serializers, status
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import UpdateAPIView
-from rest_framework.response import Response
-from rest_framework.serializers import raise_errors_on_nested_writes
-from rest_framework.utils import model_meta
-from rest_framework.validators import UniqueValidator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
 from backend_drf.Models.administrator.models import ModerationSettings
 from backend_drf.Models.booking_service.models import *
-from django.db.models import Q, Sum
+from django.db.models import Sum
 
 
 class TableSerializer(serializers.ModelSerializer):
@@ -22,24 +12,29 @@ class TableSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    #tableID = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), source='id')
-
     class Meta:
         model = Booking
-        fields = ('tableID', 'start_datetime', 'end_datetime', 'occupied_seats')
+        fields = ('id', 'tableID', 'start_datetime', 'end_datetime', 'occupied_seats', 'status')
+        extra_kwargs = {
+            'status': {'required': False},
+        }
 
     def create(self, validated_data):
         moderation_settings, created = ModerationSettings.objects.get_or_create()
         if moderation_settings.moderation_type == 'auto':
-            STATUS = 'PAID'
+            status = 'PAID'
         else:
-            STATUS = 'VERIFY'
+            status = 'VERIFY'
 
-        taken_seats = validated_data['occupied_seats']
+        try:
+            taken_seats = validated_data['occupied_seats']
+        except KeyError:
+            raise ValidationError("Укажите количество занимаемых мест в поле occupied_seats")
+
         table_id = validated_data['tableID'].id
         intersecting_bookings = Booking.objects.filter(
-            tableID = table_id,
-            status = 'PAID',
+            tableID=table_id,
+            status='PAID',
             start_datetime__lte=validated_data['end_datetime'],
             end_datetime__gt=validated_data['start_datetime']
         )
@@ -51,14 +46,14 @@ class BookingSerializer(serializers.ModelSerializer):
         if available_seats >= taken_seats:
             user = self.context['request'].user
             booking = Booking.objects.create(
-                userID = user,
-                status = STATUS,
-                tableID = table,
+                userID=user,
+                status=status,
+                tableID=table,
 
-                start_datetime = validated_data['start_datetime'],
-                end_datetime = validated_data['end_datetime'],
+                start_datetime=validated_data['start_datetime'],
+                end_datetime=validated_data['end_datetime'],
 
-                occupied_seats = taken_seats,
+                occupied_seats=taken_seats,
             )
             booking.save()
             return booking

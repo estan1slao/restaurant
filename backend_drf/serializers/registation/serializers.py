@@ -1,15 +1,7 @@
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.contrib.auth.handlers.modwsgi import check_password
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
-from rest_framework import serializers, status
-from rest_framework.generics import UpdateAPIView
-from rest_framework.response import Response
-from rest_framework.serializers import raise_errors_on_nested_writes
-from rest_framework.utils import model_meta
+from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
 from backend_drf.models import Account
 
 
@@ -17,13 +9,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-
-        # Add custom claims
         token['username'] = user.username
         token['email'] = user.email
-        #token['phone_number'] = user.phone_number
-        # ...
-
         return token
 
 
