@@ -36,6 +36,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -152,6 +153,9 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 CORS_ORIGIN_WHITELIST = [
     "http://localhost:8080",
+    'https://restaurant-point.netlify.app/',
+    'https://main--restaurant-point.netlify.app/',
+    'https://666a14fe4b9a653dc87a9caf--restaurant-point.netlify.app/',
 ]
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
