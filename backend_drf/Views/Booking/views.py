@@ -51,11 +51,15 @@ class GetBookingView(APIView):
     permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
-        me_booking = Booking.objects.filter(
-            userID=request.user
-        )
+        me_booking = Booking.objects.filter(userID=request.user)
         serializer = BookingSerializer(me_booking, many=True)
-        return Response(serializer.data)
+        booking_data = serializer.data
+
+        for booking in booking_data:
+            table = Table.objects.get(id=booking['tableID'])
+            booking['table_title'] = table.title
+
+        return Response(booking_data)
 
 
 class CancelBookingView(APIView):
@@ -123,7 +127,7 @@ class VerificationBookingsByDateView(APIView):
 
 
 class ConfirmBookingView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminUserOrOwner]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def put(self, request, booking_id):
         booking = get_object_or_404(Booking, id=booking_id)
@@ -150,6 +154,8 @@ class ConfirmBookingView(APIView):
                     booking.save()
                     return Response({'detail': 'Booking confirmed successfully.'}, status=status.HTTP_200_OK)
                 else:
+                    booking.status = 'CANCEL'
+                    booking.save()
                     return Response({'detail': 'Not enough available seats.'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'detail': 'Booking cannot be confirmed.'}, status=status.HTTP_400_BAD_REQUEST)

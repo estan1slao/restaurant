@@ -54,7 +54,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'phone_number')
+        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'phone_number', 'is_staff')
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
@@ -75,3 +75,9 @@ class ProfileSerializer(serializers.ModelSerializer):
         validated_data.pop('phone_number', None)
 
         return super(ProfileSerializer, self).update(instance, validated_data)
+
+
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ['first_name', 'last_name', 'email', 'phone_number']

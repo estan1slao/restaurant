@@ -31,6 +31,9 @@ class BookingSerializer(serializers.ModelSerializer):
         except KeyError:
             raise ValidationError("Укажите количество занимаемых мест в поле occupied_seats")
 
+        if taken_seats <= 0:
+            raise ValidationError("Укажите корректное (<= 0) количество занимаемых мест в поле occupied_seats")
+
         table_id = validated_data['tableID'].id
         intersecting_bookings = Booking.objects.filter(
             tableID=table_id,
