@@ -1,8 +1,10 @@
+from django.core.mail import send_mail
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from backend_drf.Models.administrator.models import ModerationSettings
 from backend_drf.Models.booking_service.models import *
 from django.db.models import Sum
+from restaurant.settings import SERVER_EMAIL
 
 
 class TableSerializer(serializers.ModelSerializer):
@@ -59,6 +61,17 @@ class BookingSerializer(serializers.ModelSerializer):
                 occupied_seats=taken_seats,
             )
             booking.save()
+
+            send_mail(
+                "Новое бронирование в «Ресторан-и-Точка»",
+                f"Вы совершили бронирование на дату {booking.start_datetime.strftime('%d.%m.%Y')} с {booking.start_datetime.strftime('%H:%M')} по {booking.end_datetime.strftime('%H:%M')}.\n"
+                f"Статус бронирования: {'Оплачено' if booking.status == 'PAID' else 'На проверке' if booking.status=='VERIFY' else 'Отменено'}.\n"
+                f"Забронированные места: {booking.occupied_seats}",
+                SERVER_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+
             return booking
         else:
             raise ValidationError("Для этого бронирования недостаточно свободных мест")

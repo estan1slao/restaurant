@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime
 from backend_drf.permissions import IsAdminUserOrOwner
 from django.utils import timezone
+import pytz
 
 
 class CreateBookingView(mixins.CreateModelMixin,
@@ -69,9 +70,23 @@ class CancelBookingView(APIView):
         booking = get_object_or_404(Booking, id=booking_id)
 
         if request.user == booking.userID or request.user.is_staff:
-            if booking.status == 'VERIFY' or request.user.is_staff or booking.start_datetime > timezone.now():
+            if ((booking.status == 'VERIFY' and booking.start_datetime > timezone.now()) or
+                    (booking.status == 'VERIFY' and request.user.is_staff)):
                 booking.status = 'CANCEL'
                 booking.save()
+
+                timezone_ = pytz.timezone('Etc/GMT-5')
+
+                send_mail(
+                    "Ваше бронирование в «Ресторан-и-Точка» отменено!",
+                    f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                    f"Статус бронирования: {'Оплачено' if booking.status == 'PAID' else 'На проверке' if booking.status == 'VERIFY' else 'Отменено'}.\n"
+                    f"Забронированные места: {booking.occupied_seats}",
+                    SERVER_EMAIL,
+                    [booking.userID.email],
+                    fail_silently=False,
+                )
+
                 return Response({'detail': 'Booking cancelled successfully.'}, status=status.HTTP_200_OK)
             else:
                 return Response({'detail': 'Booking cannot be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -133,7 +148,7 @@ class ConfirmBookingView(APIView):
         booking = get_object_or_404(Booking, id=booking_id)
         table = get_object_or_404(Table, id=booking.tableID.id)
 
-        if request.user == booking.userID or request.user.is_staff:
+        if request.user.is_staff:
             if booking.status == 'VERIFY':
                 intersecting_bookings = Booking.objects.filter(
                     tableID=table.id,
@@ -152,10 +167,36 @@ class ConfirmBookingView(APIView):
                 if available_seats >= booking.occupied_seats:
                     booking.status = 'PAID'
                     booking.save()
+
+                    timezone_ = pytz.timezone('Etc/GMT-5')
+
+                    send_mail(
+                        "Ваше бронирование в «Ресторан-и-Точка» подтверждено!",
+                        f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                        f"Статус бронирования: {'Оплачено' if booking.status == 'PAID' else 'На проверке' if booking.status=='VERIFY' else 'Отменено'}.\n"
+                        f"Забронированные места: {booking.occupied_seats}",
+                        SERVER_EMAIL,
+                        [booking.userID.email],
+                        fail_silently=False,
+                    )
+
                     return Response({'detail': 'Booking confirmed successfully.'}, status=status.HTTP_200_OK)
                 else:
                     booking.status = 'CANCEL'
                     booking.save()
+
+                    timezone_ = pytz.timezone('Etc/GMT-5')
+
+                    send_mail(
+                        "Ваше бронирование в «Ресторан-и-Точка» отменено!",
+                        f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                        f"Статус бронирования: {'Оплачено' if booking.status == 'PAID' else 'На проверке' if booking.status=='VERIFY' else 'Отменено'}.\n"
+                        f"Забронированные места: {booking.occupied_seats}",
+                        SERVER_EMAIL,
+                        [booking.userID.email],
+                        fail_silently=False,
+                    )
+
                     return Response({'detail': 'Not enough available seats.'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'detail': 'Booking cannot be confirmed.'}, status=status.HTTP_400_BAD_REQUEST)
