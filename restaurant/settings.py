@@ -1,14 +1,20 @@
-from decouple import config
+import dj_database_url
 from datetime import timedelta
 from pathlib import Path
+from environ import Env
+
+env = Env()
+Env.read_env()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = env('SECRET_KEY')
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = env('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=[], cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=[], cast=lambda v: [s.strip() for s in v.split(',')])
+
+CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -21,6 +27,8 @@ INSTALLED_APPS = [
     'rest_framework',
     "phonenumber_field",
     'rest_framework_simplejwt',
+    'corsheaders',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -53,12 +61,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'restaurant.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': config('DATABASE_ENGINE', default='django.db.backends.sqlite3'),
-        'NAME': BASE_DIR / config('DATABASE_NAME', default='db.sqlite3'),
+if not DEBUG:
+    DATABASES = {
+        'default': dj_database_url.parse(env('DATABASE_URL'))
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': env('DATABASE_ENGINE', default='django.db.backends.sqlite3'),
+            'NAME': BASE_DIR / env('DATABASE_NAME', default='db.sqlite3'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -131,3 +144,11 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = 'backend_drf.Account'
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:8080",
+]
