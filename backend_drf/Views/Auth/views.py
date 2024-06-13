@@ -1,4 +1,5 @@
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -54,6 +55,9 @@ def updatePassword(request):
     try:
         validate_password(new_password, user=user)
     except ValueError:
+        return Response({"error": "Пароль не соответствует требованиям безопасности"},
+                        status=status.HTTP_400_BAD_REQUEST)
+    except ValidationError:
         return Response({"error": "Пароль не соответствует требованиям безопасности"},
                         status=status.HTTP_400_BAD_REQUEST)
 
