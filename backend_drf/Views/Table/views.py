@@ -1,3 +1,4 @@
+import pytz
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 
@@ -29,9 +30,9 @@ def get_table_info(request, table_id, date):
             dt = dt.replace(minute=0, second=0, microsecond=0)
         return dt
 
-    now = datetime.now()
+    local_tz = pytz.timezone('Asia/Yekaterinburg')
+    now = datetime.now(local_tz)
 
-    now = make_aware(now, get_current_timezone())
     booking_date = make_aware(date, get_current_timezone())
 
     if booking_date.date() < now.date():
