@@ -38,6 +38,9 @@ class CreateBookingView(mixins.CreateModelMixin,
         request.data['end_datetime'] = end_datetime
         local_tz = pytz.timezone('Asia/Yekaterinburg')
 
+        start_datetime = local_tz.localize(start_datetime)
+        end_datetime = local_tz.localize(end_datetime)
+
         if start_datetime <= datetime.now(local_tz) or end_datetime <= datetime.now(local_tz):
             return Response({"error": "Даты должны быть только в будущем времени"},
                             status=status.HTTP_400_BAD_REQUEST)
