@@ -57,6 +57,23 @@ class GetBookingView(APIView):
 
     def get(self, request, *args, **kwargs):
         me_booking = Booking.objects.filter(userID=request.user)
+
+        for booking in me_booking:
+            if booking.status == 'VERIFY' and booking.start_datetime <= timezone.now():
+                booking.status = 'CANCEL'
+                booking.save()
+
+                timezone_ = pytz.timezone('Etc/GMT-5')
+                send_mail(
+                    "Ваше бронирование в «Ресторан-и-Точка» отменено!",
+                    f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                    f"Статус бронирования: {'Отменено'}.\n"
+                    f"Забронированные места: {booking.occupied_seats}",
+                    SERVER_EMAIL,
+                    [booking.userID.email],
+                    fail_silently=False,
+                )
+
         serializer = BookingSerializer(me_booking, many=True)
         booking_data = serializer.data
 
