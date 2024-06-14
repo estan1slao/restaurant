@@ -6,7 +6,7 @@ from rest_framework.viewsets import GenericViewSet
 from backend_drf.serializers.administrators.serializers import BookingSerializerForAdmin
 from backend_drf.serializers.booking.serializers import *
 from django.shortcuts import get_object_or_404
-from datetime import datetime
+from datetime import datetime, timedelta
 from backend_drf.permissions import IsAdminUserOrOwner
 from django.utils import timezone
 import pytz
@@ -43,6 +43,10 @@ class CreateBookingView(mixins.CreateModelMixin,
 
         if start_datetime >= end_datetime:
             return Response({"error": "Дата начала бронирования должна быть перед датой окончания"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if end_datetime - start_datetime > timedelta(hours=24):
+            return Response({"error": "Время бронирования может составить только 24 часа!"},
                             status=status.HTTP_400_BAD_REQUEST)
 
         return super().create(request, *args, **kwargs)
