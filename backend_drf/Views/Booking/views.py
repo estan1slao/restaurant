@@ -74,8 +74,8 @@ class CancelBookingView(APIView):
         booking = get_object_or_404(Booking, id=booking_id)
 
         if request.user == booking.userID or request.user.is_staff:
-            if ((booking.status == 'VERIFY' and booking.start_datetime > timezone.now()) or
-                    (booking.status == 'VERIFY' and request.user.is_staff)):
+            if (((booking.status == 'VERIFY' or booking.status == 'PAID') and booking.start_datetime > timezone.now()) or
+                    request.user.is_staff):
                 booking.status = 'CANCEL'
                 booking.save()
 
@@ -104,6 +104,23 @@ class AllBookingsView(APIView):
 
     def get(self, request):
         bookings = Booking.objects.all()
+
+        for booking in bookings:
+            if booking.status == 'VERIFY' and booking.start_datetime <= timezone.now():
+                booking.status = 'CANCEL'
+                booking.save()
+
+                timezone_ = pytz.timezone('Etc/GMT-5')
+                send_mail(
+                    "Ваше бронирование в «Ресторан-и-Точка» отменено!",
+                    f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                    f"Статус бронирования: {'Отменено'}.\n"
+                    f"Забронированные места: {booking.occupied_seats}",
+                    SERVER_EMAIL,
+                    [booking.userID.email],
+                    fail_silently=False,
+                )
+
         serializer = BookingSerializerForAdmin(bookings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -113,6 +130,23 @@ class VerificationBookingsView(APIView):
 
     def get(self, request):
         bookings = Booking.objects.filter(status='VERIFY')
+
+        for booking in bookings:
+            if booking.status == 'VERIFY' and booking.start_datetime <= timezone.now():
+                booking.status = 'CANCEL'
+                booking.save()
+
+                timezone_ = pytz.timezone('Etc/GMT-5')
+                send_mail(
+                    "Ваше бронирование в «Ресторан-и-Точка» отменено!",
+                    f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                    f"Статус бронирования: {'Отменено'}.\n"
+                    f"Забронированные места: {booking.occupied_seats}",
+                    SERVER_EMAIL,
+                    [booking.userID.email],
+                    fail_silently=False,
+                )
+
         serializer = BookingSerializerForAdmin(bookings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -124,6 +158,23 @@ class AllBookingsByDateView(APIView):
         try:
             date_obj = datetime.strptime(date, '%Y-%m-%d')
             bookings = Booking.objects.filter(start_datetime__date=date_obj)
+
+            for booking in bookings:
+                if booking.status == 'VERIFY' and booking.start_datetime <= timezone.now():
+                    booking.status = 'CANCEL'
+                    booking.save()
+
+                    timezone_ = pytz.timezone('Etc/GMT-5')
+                    send_mail(
+                        "Ваше бронирование в «Ресторан-и-Точка» отменено!",
+                        f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                        f"Статус бронирования: {'Отменено'}.\n"
+                        f"Забронированные места: {booking.occupied_seats}",
+                        SERVER_EMAIL,
+                        [booking.userID.email],
+                        fail_silently=False,
+                    )
+
             serializer = BookingSerializerForAdmin(bookings, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError:
@@ -138,6 +189,23 @@ class VerificationBookingsByDateView(APIView):
         try:
             date_obj = datetime.strptime(date, '%Y-%m-%d')
             bookings = Booking.objects.filter(status='VERIFY', start_datetime__date=date_obj)
+
+            for booking in bookings:
+                if booking.status == 'VERIFY' and booking.start_datetime <= timezone.now():
+                    booking.status = 'CANCEL'
+                    booking.save()
+
+                    timezone_ = pytz.timezone('Etc/GMT-5')
+                    send_mail(
+                        "Ваше бронирование в «Ресторан-и-Точка» отменено!",
+                        f"Вы совершили бронирование на дату {booking.start_datetime.astimezone(timezone_).strftime('%d.%m.%Y')} с {booking.start_datetime.astimezone(timezone_).strftime('%H:%M')} по {booking.end_datetime.astimezone(timezone_).strftime('%H:%M')}.\n"
+                        f"Статус бронирования: {'Отменено'}.\n"
+                        f"Забронированные места: {booking.occupied_seats}",
+                        SERVER_EMAIL,
+                        [booking.userID.email],
+                        fail_silently=False,
+                    )
+
             serializer = BookingSerializerForAdmin(bookings, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError:
