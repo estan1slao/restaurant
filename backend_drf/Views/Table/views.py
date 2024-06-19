@@ -69,10 +69,10 @@ def get_table_info(request, table_id, date):
 
     for booking in bookings:
         for slot in schedule:
-            if slot['start_time'] < booking.end_datetime and slot['end_time'] > booking.start_datetime:
+            if booking.start_datetime < slot['end_time'] and booking.end_datetime > slot['start_time']:
                 slot['free_seats'] -= booking.occupied_seats
                 if slot['free_seats'] <= 0:
-                    schedule.remove(slot)
+                    slot['free_seats'] = 0
 
     response = {
         'table_id': table.id,

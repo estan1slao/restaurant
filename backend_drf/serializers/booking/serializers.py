@@ -40,7 +40,7 @@ class BookingSerializer(serializers.ModelSerializer):
         intersecting_bookings = Booking.objects.filter(
             tableID=table_id,
             status='PAID',
-            start_datetime__lte=validated_data['end_datetime'],
+            start_datetime__lt=validated_data['end_datetime'],
             end_datetime__gt=validated_data['start_datetime']
         )
 
